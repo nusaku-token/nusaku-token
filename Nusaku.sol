@@ -19,7 +19,8 @@
  * 
  * Clean the air, Green the world...
  * plant the tree, find the gold...
- * 
+ * against climate change, oxygenerator is our hope...
+ *
  * Join https://www.nusaku.id for more information
  * 
 */
@@ -30,7 +31,7 @@ abstract contract Context {
         return payable(msg.sender);
     }
     function _msgData() internal view virtual returns (bytes memory) {
-        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        this;
         return msg.data;
     }
 }
