@@ -17,11 +17,7 @@
  * N::::::N        N::::::N        UU:::::::::UU         S:::::::::::::::SS      A:::::A                 A:::::A     K:::::::K    K:::::K        UU:::::::::UU    
  * NNNNNNNN         NNNNNNN          UUUUUUUUU            SSSSSSSSSSSSSSS       AAAAAAA                   AAAAAAA    KKKKKKKKK    KKKKKKK          UUUUUUUUU      
  * 
- * Clean the air, Green the world...
- * plant the tree, find the gold...
- * 
  * Join https://www.nusaku.id for more information
- * 
 */
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.10;
@@ -351,11 +347,11 @@ contract Ownable is Context {
         _owner = _previousOwner;
     }
 }
-contract Nusaku is Context, IERC20, Ownable {
+contract cok is Context, IERC20, Ownable {
     using SafeMath for uint256;
     using Address for address;
-    address payable public oxygeneratorAddress = payable(0x1204c224B0db467eE424992c48931Cc7Ab406450);
-    address payable public marketingAddress = payable(0x7631eabABD3a70C7Fc72eC72fed5CA5CB469d033);
+    address payable public oxygeneratorAddress = payable(0xF3865534aD5ec996724666d2C734642aEe8218e2); // Oxygenerator Address
+    address payable public fourFtwoCAddress = payable(0xa396c094d362b77C663e7bc798Bd5444533Ab52F); // 4F2C Address
     address public immutable deadAddress = 0x000000000000000000000000000000000000dEaD;
     mapping (address => uint256) private _rOwned;
     mapping (address => uint256) private _tOwned;
@@ -363,25 +359,21 @@ contract Nusaku is Context, IERC20, Ownable {
     mapping (address => bool) private _isExcludedFromFee;
     mapping (address => bool) private _isExcluded;
     address[] private _excluded;
+    uint256 public _liquidityFee = 10;
+    uint256 public oxygeneratorNusaku = 5;
+    uint256 public fourFtwoCNusaku = 3;
+    uint256 public _maxWalletAmount = 3888000000000;
+    uint256 public _maxTxAmount = 777777777 * 10**9;
+    string private _name = "cook";
+    string private _symbol = "c";
+    uint8 private _decimals = 9;
     uint256 private constant MAX = ~uint256(0);
     uint256 private _tTotal = 777777777 * 10**9;
     uint256 private _rTotal = (MAX - (MAX % _tTotal));
-    uint256 private _tFeeTotal;
-    string private _name = "NUSAKU";
-    string private _symbol = "NUSAKU";
-    uint8 private _decimals = 9;
-    uint256 public _taxFee = 0;
-    uint256 private _previousTaxFee = _taxFee;
-    uint256 public _liquidityFee = 10;
     uint256 private _previousLiquidityFee = _liquidityFee;
-    uint256 public oxygeneratorDivisor = 5;
-    uint256 public marketingDivisor = 3;
-    uint256 public _maxWalletPercent = 5;
-    uint256 public _maxWalletDecimal = 4;
-    uint256 public _maxWalletAmount = _tTotal * _maxWalletPercent / 10**(2 + _maxWalletDecimal);
-    uint256 public _maxTxAmount = 777777777 * 10**9;
-    uint256 private minimumTokensBeforeSwap = 777 * 10**9; 
-    uint256 private buyBackUpperLimit = 777 * 10**9;
+    uint256 private minimumTokensBeforeSwap = 500 * 10**9; 
+    uint256 private buyBackUpperLimit = 500 * 10**9;
+
     IUniswapV2Router02 public immutable uniswapV2Router;
     address public immutable uniswapV2Pair;
     bool inSwapAndLiquify;
@@ -410,7 +402,10 @@ contract Nusaku is Context, IERC20, Ownable {
     }
     constructor () {
         _rOwned[_msgSender()] = _rTotal;
-        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
+        // PancakeSwap Router address:
+        // (BSC mainnet) 0x10ED43C718714eb63d5aA57B78B54704E256024E
+        // (BSC Testnet) 0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3
+        IUniswapV2Router02 _uniswapV2Router = IUniswapV2Router02(0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3);
         uniswapV2Pair = IUniswapV2Factory(_uniswapV2Router.factory())
             .createPair(address(this), _uniswapV2Router.WETH());
         uniswapV2Router = _uniswapV2Router;
@@ -461,9 +456,6 @@ contract Nusaku is Context, IERC20, Ownable {
     function isExcludedFromReward(address account) public view returns (bool) {
         return _isExcluded[account];
     }
-    function totalFees() public view returns (uint256) {
-        return _tFeeTotal;
-    }
     function minimumTokensBeforeSwapAmount() public view returns (uint256) {
         return minimumTokensBeforeSwap;
     }
@@ -473,18 +465,17 @@ contract Nusaku is Context, IERC20, Ownable {
     function deliver(uint256 tAmount) public {
         address sender = _msgSender();
         require(!_isExcluded[sender], "Excluded addresses cannot call this function");
-        (uint256 rAmount,,,,,) = _getValues(tAmount);
+        (uint256 rAmount,,,) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rTotal = _rTotal.sub(rAmount);
-        _tFeeTotal = _tFeeTotal.add(tAmount);
     }
     function reflectionFromToken(uint256 tAmount, bool deductTransferFee) public view returns(uint256) {
         require(tAmount <= _tTotal, "Amount must be less than supply");
         if (!deductTransferFee) {
-            (uint256 rAmount,,,,,) = _getValues(tAmount);
+            (uint256 rAmount,,,) = _getValues(tAmount);
             return rAmount;
         } else {
-            (,uint256 rTransferAmount,,,,) = _getValues(tAmount);
+            (uint256 rTransferAmount,,,) = _getValues(tAmount);
             return rTransferAmount;
         }
     }
@@ -492,26 +483,6 @@ contract Nusaku is Context, IERC20, Ownable {
         require(rAmount <= _rTotal, "Amount must be less than total reflections");
         uint256 currentRate =  _getRate();
         return rAmount.div(currentRate);
-    }
-    function excludeFromReward(address account) public onlyOwner() {
-        require(!_isExcluded[account], "Account is already excluded");
-        if(_rOwned[account] > 0) {
-            _tOwned[account] = tokenFromReflection(_rOwned[account]);
-        }
-        _isExcluded[account] = true;
-        _excluded.push(account);
-    }
-    function includeInReward(address account) external onlyOwner() {
-        require(_isExcluded[account], "Account is already excluded");
-        for (uint256 i = 0; i < _excluded.length; i++) {
-            if (_excluded[i] == account) {
-                _excluded[i] = _excluded[_excluded.length - 1];
-                _tOwned[account] = 0;
-                _isExcluded[account] = false;
-                _excluded.pop();
-                break;
-            }
-        }
     }
     function _approve(address owner, address spender, uint256 amount) private {
         require(owner != address(0), "ERC20: approve from the zero address");
@@ -558,9 +529,9 @@ contract Nusaku is Context, IERC20, Ownable {
         swapTokensForEth(contractTokenBalance);
         uint256 transferredBalance = address(this).balance.sub(initialBalance);
         //Send to oxygenerator address
-        transferToAddressETH(oxygeneratorAddress, transferredBalance.div(_liquidityFee).mul(oxygeneratorDivisor));
-        //Send to Marketing address
-        transferToAddressETH(marketingAddress, transferredBalance.div(_liquidityFee).mul(marketingDivisor));
+        transferToAddressETH(oxygeneratorAddress, transferredBalance.div(_liquidityFee).mul(oxygeneratorNusaku));
+        //Send to 4F2C address
+        transferToAddressETH(fourFtwoCAddress, transferredBalance.div(_liquidityFee).mul(fourFtwoCNusaku));
     }
     function buyBackTokens(uint256 amount) private lockTheSwap {
     	if (amount > 0) {
@@ -627,64 +598,53 @@ contract Nusaku is Context, IERC20, Ownable {
             restoreAllFee();
     }
     function _transferStandard(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 tTransferAmount, uint256 tLiquidity) = _getValues(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);
         _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
     function _transferToExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 tTransferAmount, uint256 tLiquidity) = _getValues(tAmount);
 	    _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);           
         _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
     function _transferFromExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 tTransferAmount, uint256 tLiquidity) = _getValues(tAmount);
     	_tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);   
         _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
     function _transferBothExcluded(address sender, address recipient, uint256 tAmount) private {
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee, uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount, uint256 tTransferAmount, uint256 tLiquidity) = _getValues(tAmount);
     	_tOwned[sender] = _tOwned[sender].sub(tAmount);
         _rOwned[sender] = _rOwned[sender].sub(rAmount);
         _tOwned[recipient] = _tOwned[recipient].add(tTransferAmount);
         _rOwned[recipient] = _rOwned[recipient].add(rTransferAmount);        
         _takeLiquidity(tLiquidity);
-        _reflectFee(rFee, tFee);
         emit Transfer(sender, recipient, tTransferAmount);
     }
-    function _reflectFee(uint256 rFee, uint256 tFee) private {
-        _rTotal = _rTotal.sub(rFee);
-        _tFeeTotal = _tFeeTotal.add(tFee);
-        _maxWalletAmount = _tTotal.mul(_maxWalletPercent).div(10**(2 + _maxWalletDecimal));
-    }
-    function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
-        (uint256 tTransferAmount, uint256 tFee, uint256 tLiquidity) = _getTValues(tAmount);
-        (uint256 rAmount, uint256 rTransferAmount, uint256 rFee) = _getRValues(tAmount, tFee, tLiquidity, _getRate());
-        return (rAmount, rTransferAmount, rFee, tTransferAmount, tFee, tLiquidity);
+    function _getValues(uint256 tAmount) private view returns (uint256, uint256, uint256, uint256) {
+        (uint256 tTransferAmount, uint256 tLiquidity) = _getTValues(tAmount);
+        (uint256 rAmount, uint256 rTransferAmount) = _getRValues(tAmount, tLiquidity, _getRate());
+        return (rAmount, rTransferAmount, tTransferAmount, tLiquidity);
     }
 
-    function _getTValues(uint256 tAmount) private view returns (uint256, uint256, uint256) {
-        uint256 tFee = calculateTaxFee(tAmount);
+    function _getTValues(uint256 tAmount) private view returns (uint256, uint256) {
         uint256 tLiquidity = calculateLiquidityFee(tAmount);
-        uint256 tTransferAmount = tAmount.sub(tFee).sub(tLiquidity);
-        return (tTransferAmount, tFee, tLiquidity);
+        uint256 tTransferAmount = tAmount.sub(tLiquidity);
+        return (tTransferAmount, tLiquidity);
     }
-    function _getRValues(uint256 tAmount, uint256 tFee, uint256 tLiquidity, uint256 currentRate) private pure returns (uint256, uint256, uint256) {
+    function _getRValues(uint256 tAmount, uint256 tLiquidity, uint256 currentRate) private pure returns (uint256, uint256) {
         uint256 rAmount = tAmount.mul(currentRate);
-        uint256 rFee = tFee.mul(currentRate);
         uint256 rLiquidity = tLiquidity.mul(currentRate);
-        uint256 rTransferAmount = rAmount.sub(rFee).sub(rLiquidity);
-        return (rAmount, rTransferAmount, rFee);
+        uint256 rTransferAmount = rAmount.sub(rLiquidity);
+        return (rAmount, rTransferAmount);
     }
     function _getRate() private view returns(uint256) {
         (uint256 rSupply, uint256 tSupply) = _getCurrentSupply();
@@ -708,25 +668,17 @@ contract Nusaku is Context, IERC20, Ownable {
         if(_isExcluded[address(this)])
             _tOwned[address(this)] = _tOwned[address(this)].add(tLiquidity);
     }
-    function calculateTaxFee(uint256 _amount) private view returns (uint256) {
-        return _amount.mul(_taxFee).div(
-            10**2
-        );
-    }
     function calculateLiquidityFee(uint256 _amount) private view returns (uint256) {
         return _amount.mul(_liquidityFee).div(
             10**2
         );
     }
     function removeAllFee() private {
-        if(_taxFee == 0 && _liquidityFee == 0) return;
-        _previousTaxFee = _taxFee;
+        if(_liquidityFee == 0) return;
         _previousLiquidityFee = _liquidityFee;
-        _taxFee = 0;
         _liquidityFee = 0;
     }
     function restoreAllFee() private {
-        _taxFee = _previousTaxFee;
         _liquidityFee = _previousLiquidityFee;
     }
     function isExcludedFromFee(address account) public view returns(bool) {
@@ -738,25 +690,20 @@ contract Nusaku is Context, IERC20, Ownable {
     function includeInFee(address account) public onlyOwner {
         _isExcludedFromFee[account] = false;
     }
-    function setTaxFeePercent(uint256 taxFee) external onlyOwner() {
-        _taxFee = taxFee;
-    }
     function setLiquidityFeePercent(uint256 liquidityFee) external onlyOwner() {
         _liquidityFee = liquidityFee;
     }
     function setMaxTxAmount(uint256 maxTxAmount) external onlyOwner() {
         _maxTxAmount = maxTxAmount;
     }
-     function setMaxWalletPercent(uint256 maxWalletPercent, uint256 maxWalletDecimal) external onlyOwner {
-        _maxWalletPercent = maxWalletPercent;
-        _maxWalletDecimal = maxWalletDecimal;
-        _maxWalletAmount = _tTotal.mul(_maxWalletPercent).div(10**(2 + _maxWalletDecimal));
+    function setMaxWalletAmount(uint256 maxWalletAmount) external onlyOwner() {
+        _maxWalletAmount = maxWalletAmount;
     }
-    function setOxygeneratorDivisor(uint256 divisor) external onlyOwner() {
-        oxygeneratorDivisor = divisor;
+    function setOxygeneratorNusaku(uint256 nusaku) external onlyOwner() {
+        oxygeneratorNusaku = nusaku;
     }
-    function setMarketingDivisor(uint256 divisor) external onlyOwner() {
-        marketingDivisor = divisor;
+    function set4F2CNusaku(uint256 nusaku) external onlyOwner() {
+        fourFtwoCNusaku = nusaku ;
     }
     function setNumTokensSellToAddToLiquidity(uint256 _minimumTokensBeforeSwap) external onlyOwner() {
         minimumTokensBeforeSwap = _minimumTokensBeforeSwap;
@@ -764,8 +711,8 @@ contract Nusaku is Context, IERC20, Ownable {
      function setBuybackUpperLimit(uint256 buyBackLimit) external onlyOwner() {
         buyBackUpperLimit = buyBackLimit * 10**9;
     }
-    function setMarketingAddress(address _marketingAddress) external onlyOwner() {
-        marketingAddress = payable(_marketingAddress);
+    function set4F2CAddress(address _fourFtwoCAddress) external onlyOwner() {
+        fourFtwoCAddress = payable(_fourFtwoCAddress);
     }
     function setOxygeneratorAddress(address _oxygeneratorAddress) external onlyOwner() {
         oxygeneratorAddress = payable(_oxygeneratorAddress);
@@ -778,15 +725,13 @@ contract Nusaku is Context, IERC20, Ownable {
         buyBackEnabled = _enabled;
         emit BuyBackEnabledUpdated(_enabled);
     }
-    function prepareForPreSale() external onlyOwner {
+    function salePaused() external onlyOwner {
         setSwapAndLiquifyEnabled(false);
-        _taxFee = 0;
         _liquidityFee = 0;
-        _maxTxAmount = 777777777 * 10**9;
+        _maxTxAmount = 1;
     }
-    function afterPreSale() external onlyOwner {
+    function saleStart() external onlyOwner {
         setSwapAndLiquifyEnabled(true);
-        _taxFee = 0;
         _liquidityFee = 10;
         _maxTxAmount = 777777777 * 10**9;
     }
