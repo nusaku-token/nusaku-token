@@ -1,9 +1,9 @@
-<b>NUSAKU</b>
+# NUSAKU
 
 Clean the air, green the world.
 plant the trees, find the gold.
 against climate change, oxygenerator is our hope.
 
-<b>About Us</b>
+# ABOUT US
 
 visit www.nusaku.id for more information...
