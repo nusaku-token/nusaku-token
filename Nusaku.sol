@@ -387,6 +387,7 @@ contract Nusaku is Context, IERC20, Ownable {
     uint256 public marketingNusaku = 3;
 
     uint256 public _maxTxAmount = 777777777 * 10**9;
+    uint256 public _maxWalletAmount = 3888 *10**9;
 
     uint256 private _previousLiquidityFee = _liquidityFee;
     uint256 private minimumTokensBeforeSwap = 500 * 10**9; 
@@ -542,6 +543,8 @@ contract Nusaku is Context, IERC20, Ownable {
         require(amount > 0, "Transfer amount must be greater than zero");
         if(from != owner() && to != owner()) {
             require(amount <= _maxTxAmount, "Transfer amount exceeds the maxTxAmount.");
+        if(from != owner() && to != owner() && to != address(1) && to != uniswapV2Pair)
+            require(balanceOf(to) + amount <= _maxWalletAmount, "Exceeds maximum wallet token amount");
         }
         uint256 contractTokenBalance = balanceOf(address(this));
         bool overMinimumTokenBalance = contractTokenBalance >= minimumTokensBeforeSwap;
@@ -758,6 +761,10 @@ contract Nusaku is Context, IERC20, Ownable {
 
     function setMaxTxAmount(uint256 maxTxAmount) external onlyOwner() {
         _maxTxAmount = maxTxAmount;
+    }
+
+    function setMaxWalletAmount(uint256 maxWalletAmount) external onlyOwner() {
+        _maxWalletAmount = maxWalletAmount;
     }
 
     function setOxygeneratorNusaku(uint256 nusaku) external onlyOwner() {
